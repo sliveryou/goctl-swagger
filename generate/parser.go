@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -13,7 +14,9 @@ import (
 	"unsafe"
 
 	"github.com/zeromicro/go-zero/tools/goctl/api/spec"
+	"github.com/zeromicro/go-zero/tools/goctl/config"
 	"github.com/zeromicro/go-zero/tools/goctl/plugin"
+	"github.com/zeromicro/go-zero/tools/goctl/util/format"
 )
 
 var strColon = []byte(":")
@@ -241,11 +244,21 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 			}
 			tags := service.Name
 			if value := group.GetAnnotation("group"); len(value) > 0 {
-				tags = value
+				namingFormat, err := format.FileNamingFormat(config.DefaultFormat, tags)
+				if err != nil {
+					return
+				}
+
+				tags = filepath.Join(namingFormat, value)
 			}
 
 			if value := group.GetAnnotation("swtags"); len(value) > 0 {
-				tags = value
+				namingFormat, err := format.FileNamingFormat(config.DefaultFormat, tags)
+				if err != nil {
+					return
+				}
+
+				tags = filepath.Join(namingFormat, value)
 			}
 
 			operationObject := &swaggerOperationObject{
@@ -650,7 +663,7 @@ func schemaOfField(member spec.Member) swaggerSchemaObject {
 	comment = strings.Replace(strings.Replace(comment, "//", "", -1), "\\n", "\n", -1)
 
 	switch ft := kind; ft {
-	case reflect.Invalid: //[]Struct 也有可能是 Struct
+	case reflect.Invalid: // []Struct 也有可能是 Struct
 		// []Struct
 		// map[ArrayType:map[Star:map[StringExpr:UserSearchReq] StringExpr:*UserSearchReq] StringExpr:[]*UserSearchReq]
 		refTypeName := strings.Replace(member.Type.Name(), "[", "", 1)
