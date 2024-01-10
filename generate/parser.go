@@ -3,6 +3,7 @@ package generate
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,7 +20,10 @@ import (
 	"github.com/zeromicro/go-zero/tools/goctl/util/format"
 )
 
-var strColon = []byte(":")
+var (
+	strColon        = []byte(":")
+	defaultResponse = parseDefaultResponse()
+)
 
 const (
 	defaultOption   = "default"
@@ -38,6 +42,8 @@ const (
 	tagKeyForm     = "form"
 	tagKeyJson     = "json"
 	tagKeyValidate = "validate"
+
+	DefaultResponseJson = `[{"name":"trace_id","type":"string","description":"链路追踪id"},{"name":"code","type":"integer","description":"状态码"},{"name":"msg","type":"string","description":"消息"},{"name":"data","type":"object","description":"数据","is_data":true}]`
 )
 
 func parseRangeOption(option string) (float64, float64, bool) {
@@ -63,7 +69,7 @@ func parseRangeOption(option string) (float64, float64, bool) {
 	return min, max, true
 }
 
-func applyGenerate(p *plugin.Plugin, host string, basePath string, schemes string) (*swaggerObject, error) {
+func applyGenerate(p *plugin.Plugin, host, basePath, schemes, pack, response string) (*swaggerObject, error) {
 	title, _ := strconv.Unquote(p.Api.Info.Properties["title"])
 	version, _ := strconv.Unquote(p.Api.Info.Properties["version"])
 	desc, _ := strconv.Unquote(p.Api.Info.Properties["desc"])
@@ -112,8 +118,22 @@ func applyGenerate(p *plugin.Plugin, host string, basePath string, schemes strin
 
 	// s.Security = append(s.Security, swaggerSecurityRequirementObject{"apiKey": []string{}})
 
+	dataKey := "data"
+	if pack != "" {
+		resp := defaultResponse
+		if response != "" {
+			r, dk, err := parseResponse(response)
+			if err != nil {
+				return nil, err
+			}
+			resp = r
+			dataKey = dk
+		}
+		s.Definitions[pack] = resp
+	}
+
 	requestResponseRefs := refMap{}
-	renderServiceRoutes(p.Api.Service, p.Api.Service.Groups, s.Paths, requestResponseRefs)
+	renderServiceRoutes(p.Api.Service, p.Api.Service.Groups, s.Paths, requestResponseRefs, pack, dataKey)
 	m := messageMap{}
 
 	renderReplyAsDefinition(s.Definitions, m, p.Api.Types, requestResponseRefs)
@@ -121,7 +141,7 @@ func applyGenerate(p *plugin.Plugin, host string, basePath string, schemes strin
 	return &s, nil
 }
 
-func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swaggerPathsObject, requestResponseRefs refMap) {
+func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swaggerPathsObject, requestResponseRefs refMap, pack, dataKey string) {
 	for _, group := range groups {
 		for _, route := range group.Routes {
 			var (
@@ -262,18 +282,28 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 				tags = filepath.Join(namingFormat, value)
 			}
 
+			schema := swaggerSchemaObject{
+				schemaCore: respSchema,
+			}
+			if pack != "" {
+				schema = swaggerSchemaObject{
+					AllOf: []swaggerSchemaObject{
+						{schemaCore: schemaCore{Ref: "#/definitions/" + strings.TrimPrefix(pack, "/")}},
+						{schemaCore: schemaCore{Type: "object"}, Properties: &swaggerSchemaObjectProperties{{Key: dataKey, Value: respSchema}}},
+					},
+				}
+			}
 			operationObject := &swaggerOperationObject{
 				Tags:       []string{tags},
 				Parameters: parameters,
 				Responses: swaggerResponsesObject{
 					"200": swaggerResponseObject{
 						Description: desc,
-						Schema: swaggerSchemaObject{
-							schemaCore: respSchema,
-						},
+						Schema:      schema,
 					},
 				},
 			}
+
 			// if request has body, there is no way to distinguish query param and form param.
 			// because they both share the "form" tag, the same param will appear in both query and body.
 			if hasBody && containForm && !containJson {
@@ -366,7 +396,8 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 
 // renderMember collect param property from spec.Member, return whether there exists form fields and json fields.
 func renderMember(pathParamMap map[string]swaggerParameterObject,
-	parameters *swaggerParametersObject, member spec.Member, hasBody bool) (containForm, containJson bool) {
+	parameters *swaggerParametersObject, member spec.Member, hasBody bool,
+) (containForm, containJson bool) {
 	if embedStruct, isEmbed := member.Type.(spec.DefineStruct); isEmbed {
 		for _, m := range embedStruct.Members {
 			f, j := renderMember(pathParamMap, parameters, m, hasBody)
@@ -463,6 +494,7 @@ func fillValidateOption(s *swaggerSchemaObject, opt string) {
 		}
 	}
 }
+
 func fillValidate(s *swaggerSchemaObject, tag *spec.Tag) {
 	if tag.Key != tagKeyValidate {
 		return
@@ -549,6 +581,12 @@ func renderStruct(member spec.Member) swaggerParameterObject {
 
 	if len(member.Comment) > 0 {
 		sp.Description = strings.Replace(strings.TrimLeft(member.Comment, "//"), "\\n", "\n", -1)
+	}
+
+	// Schema is defined when "in" == "body"
+	if sp.In != "body" {
+		sp.Copy(sp.Schema)
+		sp.Schema = nil
 	}
 
 	return sp
@@ -847,4 +885,45 @@ func contains(s []string, str string) bool {
 	}
 
 	return false
+}
+
+func parseResponse(resp string) (swaggerSchemaObject, string, error) {
+	var fields []responseField
+	err := json.Unmarshal([]byte(resp), &fields)
+	if err != nil {
+		return swaggerSchemaObject{}, "", err
+	}
+
+	hasData := false
+	dataKey := ""
+	for _, field := range fields {
+		if field.Name == "" || field.Type == "" {
+			return swaggerSchemaObject{}, "", errors.New("响应字段参数错误")
+		}
+		if field.IsData {
+			hasData = true
+			dataKey = field.Name
+		}
+	}
+	if !hasData {
+		return swaggerSchemaObject{}, "", errors.New("请指定包装的数据字段")
+	}
+
+	properties := new(swaggerSchemaObjectProperties)
+	response := swaggerSchemaObject{schemaCore: schemaCore{Type: "object"}}
+	for _, field := range fields {
+		*properties = append(*properties,
+			keyVal{
+				Key:   field.Name,
+				Value: swaggerSchemaObject{schemaCore: schemaCore{Type: field.Type}, Description: field.Description},
+			})
+	}
+	response.Properties = properties
+
+	return response, dataKey, nil
+}
+
+func parseDefaultResponse() swaggerSchemaObject {
+	response, _, _ := parseResponse(DefaultResponseJson)
+	return response
 }
