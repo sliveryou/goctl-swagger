@@ -1,7 +1,7 @@
 package action
 
 import (
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 	"github.com/zeromicro/go-zero/tools/goctl/plugin"
 	"github.com/zeromicro/goctl-swagger/generate"
 )
@@ -20,5 +20,8 @@ func Generator(ctx *cli.Context) error {
 	basepath := ctx.String("basepath")
 	host := ctx.String("host")
 	schemes := ctx.String("schemes")
-	return generate.Do(fileName, host, basepath, schemes, p)
+	pack := ctx.String("pack")
+	response := ctx.String("response")
+
+	return generate.Do(fileName, host, basepath, schemes, pack, response, p)
 }
