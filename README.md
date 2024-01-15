@@ -10,6 +10,8 @@
 5. 升级 goctl 和 go-zero 到 v1.6.0，修复 [#71](https://github.com/zeromicro/goctl-swagger/issues/71)
 6. 当请求方法是 POST/PUT/PATCH 时，如果请求字段不包含 json tag，且包含 form tag时，在请求的 content-type 中添加 "multipart/form-data", "application/x-www-form-urlencoded"
 7. 添加 `-pack` 和 `-response` 选项，允许在 api 返回结构外再嵌套包装一层
+8. 修复：当结构体嵌套超过2层时，不能继承内联结构体属性的问题
+9. 优化：支持根据 `@doc()` 里的 `file_*` 或 `file_array_*` 键值生成文件类型的请求字段
 
 ### 2. 编译goctl-swagger插件
 
@@ -21,25 +23,28 @@ go install
 
 ### 3. goctl-swagger 使用说明
 
-使用例子：
+在 api 返回结构外再嵌套包装一层：
 
 ```shell
 # -filename 指定生成的 swagger 文件名称
 # -pack 开启响应包装并指定响应结构名称
-#  未指定 -response 时，默认使用如下响应结构
+#  未指定 -response 时，默认使用如下响应结构，其中 is_data 字段为指定响应结构的包装字段
 
 [{
 	"name": "trace_id",
 	"type": "string",
-	"description": "链路追踪id"
+	"description": "链路追踪id",
+	"example": "a1b2c3d4e5f6g7h8"
 }, {
 	"name": "code",
 	"type": "integer",
-	"description": "状态码"
+	"description": "状态码",
+	"example": 0
 }, {
 	"name": "msg",
 	"type": "string",
-	"description": "消息"
+	"description": "消息",
+	"example": "ok"
 }, {
 	"name": "data",
 	"type": "object",
@@ -53,4 +58,22 @@ $ goctl api plugin -plugin goctl-swagger='swagger -filename rest.swagger.json -p
 # -pack 开启外层响应包装并指定外层响应结构名称
 # -response 指定外层响应结构，需要进行转义，可以使用 https://www.bejson.com/ 进行转义，切记在最后的单引号 ' 前加上分号 ;
 $ goctl api plugin -plugin goctl-swagger='swagger -filename rest.swagger.json -pack Response -response "[{\"name\":\"trace_id\",\"type\":\"string\",\"description\":\"链路追踪id\"},{\"name\":\"code\",\"type\":\"integer\",\"description\":\"状态码\"},{\"name\":\"msg\",\"type\":\"string\",\"description\":\"消息\"},{\"name\":\"data\",\"type\":\"object\",\"description\":\"数据\",\"is_data\":true}]";' -api api/base.api -dir api
+```
+
+支持根据 `@doc()` 里的 `file_*` 或 `file_array_*` 键值生成文件类型的请求字段：
+
+```
+解析 api 文件中的 @doc 中的 "file_*" 或 "file_array_*" 键值
+"*" 表示文件字段名，如下所示：
+
+service xxxx {
+    @doc (
+        file_upload: "false, 上传文件"
+        file_array_upload: "false, 上传文件数组"
+    )
+    @handler xxxx
+    ......
+}
+
+其属性用逗号分隔，第一个代表文件是否必填，第二个表示文件的描述
 ```
