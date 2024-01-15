@@ -275,6 +275,7 @@ type swaggerSchemaObject struct {
 	MinProperties    uint64                `json:"minProperties,omitempty"`
 	Required         []string              `json:"required,omitempty"`
 	AllOf            []swaggerSchemaObject `json:"allOf,omitempty"`
+	Example          interface{}           `json:"example,omitempty"`
 }
 
 // http://swagger.io/specification/#definitionsObject
@@ -293,8 +294,9 @@ type refMap map[string]struct{}
 
 // responseField 响应字段
 type responseField struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-	IsData      bool   `json:"is_data"`
+	Name        string      `json:"name"`
+	Type        string      `json:"type"`
+	Description string      `json:"description"`
+	IsData      bool        `json:"is_data"`
+	Example     interface{} `json:"example"`
 }

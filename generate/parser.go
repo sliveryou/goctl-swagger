@@ -43,7 +43,7 @@ const (
 	tagKeyJson     = "json"
 	tagKeyValidate = "validate"
 
-	DefaultResponseJson = `[{"name":"trace_id","type":"string","description":"链路追踪id"},{"name":"code","type":"integer","description":"状态码"},{"name":"msg","type":"string","description":"消息"},{"name":"data","type":"object","description":"数据","is_data":true}]`
+	DefaultResponseJson = `[{"name":"trace_id","type":"string","description":"链路追踪id","example":"a1b2c3d4e5f6g7h8"},{"name":"code","type":"integer","description":"状态码","example":0},{"name":"msg","type":"string","description":"消息","example":"ok"},{"name":"data","type":"object","description":"数据","is_data":true}]`
 )
 
 func parseRangeOption(option string) (float64, float64, bool) {
@@ -197,6 +197,39 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 					}
 				}
 			}
+
+			// parse "file_*" or "file_array_*" key from the @doc
+			// "*" means the file field name, it's like this below:
+			// 	@doc (
+			//		file_upload: "false, 上传文件"
+			//      file_array_upload: "false, 上传文件数组"
+			//	)
+			// its properties are separated by commas
+			// first one represents the file is it required
+			// second one represents the file description
+
+			for k, v := range route.AtDoc.Properties {
+				if strings.HasPrefix(k, "file_") {
+					name := strings.TrimPrefix(k, "file_")
+					if strings.HasPrefix(k, "file_array_") {
+						name = strings.TrimPrefix(k, "file_array_") + "[]"
+					}
+					spo := swaggerParameterObject{
+						Name: name,
+						In:   "formData",
+						Type: "file",
+					}
+					if properties := strings.Split(strings.Trim(v, `"`), ","); len(properties) > 0 {
+						isRequired, _ := strconv.ParseBool(strings.TrimSpace(properties[0]))
+						spo.Required = isRequired
+						if len(properties) > 1 {
+							spo.Description = strings.TrimSpace(properties[1])
+						}
+					}
+					parameters = append(parameters, spo)
+				}
+			}
+
 			if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
 				for _, member := range defineStruct.Members {
 					f, j := renderMember(pathParamMap, &parameters, member, hasBody)
@@ -213,7 +246,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 						parameters = append(parameters, p)
 					}
 				}
-				if hasBody {
+				if hasBody && containJson {
 					reqRef := fmt.Sprintf("#/definitions/%s", route.RequestType.Name())
 
 					if len(route.RequestType.Name()) > 0 {
@@ -583,7 +616,7 @@ func renderStruct(member spec.Member) swaggerParameterObject {
 		sp.Description = strings.Replace(strings.TrimLeft(member.Comment, "//"), "\\n", "\n", -1)
 	}
 
-	// Schema is defined when "in" == "body"
+	// schema is defined when "in" == "body"
 	if sp.In != "body" {
 		sp.Copy(sp.Schema)
 		sp.Schema = nil
@@ -593,6 +626,8 @@ func renderStruct(member spec.Member) swaggerParameterObject {
 }
 
 func renderReplyAsDefinition(d swaggerDefinitionsObject, m messageMap, p []spec.Type, refs refMap) {
+	// record inline struct
+	inlineMap := make(map[string][]string)
 	for _, i2 := range p {
 		var formFields, untaggedFields swaggerSchemaObjectProperties
 
@@ -607,7 +642,10 @@ func renderReplyAsDefinition(d swaggerDefinitionsObject, m messageMap, p []spec.
 		schema.Title = defineStruct.Name()
 
 		for _, member := range defineStruct.Members {
-			collectProperties(schema.Properties, &formFields, &untaggedFields, member)
+			inlines := collectProperties(schema.Properties, &formFields, &untaggedFields, member)
+			if len(inlines) > 0 {
+				inlineMap[defineStruct.Name()] = inlines
+			}
 			for _, tag := range member.Tags() {
 				if tag.Key != tagKeyForm && tag.Key != tagKeyJson {
 					continue
@@ -644,9 +682,25 @@ func renderReplyAsDefinition(d swaggerDefinitionsObject, m messageMap, p []spec.
 
 		d[i2.Name()] = schema
 	}
+
+	// inherit properties
+	for name, inlines := range inlineMap {
+		if baseStruct, ok := d[name]; ok {
+			tmp := new(swaggerSchemaObjectProperties)
+			for _, inlineName := range inlines {
+				if inlineStruct, ok := d[inlineName]; ok {
+					*tmp = append(*tmp, *inlineStruct.Properties...)
+				}
+			}
+			// append from the head
+			if len(*tmp) > 0 {
+				*baseStruct.Properties = append(*tmp, *baseStruct.Properties...)
+			}
+		}
+	}
 }
 
-func collectProperties(jsonFields, formFields, untaggedFields *swaggerSchemaObjectProperties, member spec.Member) {
+func collectProperties(jsonFields, formFields, untaggedFields *swaggerSchemaObjectProperties, member spec.Member) (inlines []string) {
 	in := fieldIn(member)
 	if in == tagKeyHeader || in == tagKeyPath {
 		return
@@ -663,8 +717,12 @@ func collectProperties(jsonFields, formFields, untaggedFields *swaggerSchemaObje
 		// which is not friendly to the user.
 		if len(memberStruct.Members) > 0 {
 			for _, m := range memberStruct.Members {
-				collectProperties(jsonFields, formFields, untaggedFields, m)
+				is := collectProperties(jsonFields, formFields, untaggedFields, m)
+				inlines = append(inlines, is...)
 			}
+			return
+		} else {
+			inlines = append(inlines, memberStruct.Name())
 			return
 		}
 	}
@@ -678,6 +736,8 @@ func collectProperties(jsonFields, formFields, untaggedFields *swaggerSchemaObje
 	default:
 		*untaggedFields = append(*untaggedFields, kv)
 	}
+
+	return
 }
 
 func fieldIn(member spec.Member) string {
@@ -914,8 +974,12 @@ func parseResponse(resp string) (swaggerSchemaObject, string, error) {
 	for _, field := range fields {
 		*properties = append(*properties,
 			keyVal{
-				Key:   field.Name,
-				Value: swaggerSchemaObject{schemaCore: schemaCore{Type: field.Type}, Description: field.Description},
+				Key: field.Name,
+				Value: swaggerSchemaObject{
+					schemaCore:  schemaCore{Type: field.Type},
+					Description: field.Description,
+					Example:     field.Example,
+				},
 			})
 	}
 	response.Properties = properties
