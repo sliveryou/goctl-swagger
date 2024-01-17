@@ -157,7 +157,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 				path = "/" + path
 			}
 
-			if m := strings.ToUpper(route.Method); m == http.MethodPost || m == http.MethodPut || m == http.MethodPatch {
+			if m := strings.ToUpper(route.Method); m == http.MethodPost || m == http.MethodPut || m == http.MethodPatch || m == http.MethodDelete {
 				hasBody = true
 			}
 
