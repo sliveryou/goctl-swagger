@@ -12,6 +12,7 @@
 7. 添加 `-pack` 和 `-response` 选项，允许在 api 返回结构外再嵌套包装一层
 8. 修复：当结构体嵌套超过2层时，不能继承内联结构体属性的问题
 9. 优化：支持根据 `@doc()` 里的 `file_*` 或 `file_array_*` 键值生成文件类型的请求字段
+10. 添加 `delete` 请求方式允许携带请求体 [git commit](https://github.com/sliveryou/goctl-swagger/-/commit/7859e55451a11af8fbfdb91a636b23f965bb5bbe)
 
 ### 2. 编译goctl-swagger插件
 
