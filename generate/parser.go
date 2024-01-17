@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -208,7 +209,13 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 			// first one represents the file is it required
 			// second one represents the file description
 
-			for k, v := range route.AtDoc.Properties {
+			var keys []string
+			for key := range route.AtDoc.Properties {
+				keys = append(keys, key)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				v := route.AtDoc.Properties[k]
 				if strings.HasPrefix(k, "file_") {
 					name := strings.TrimPrefix(k, "file_")
 					if strings.HasPrefix(k, "file_array_") {
