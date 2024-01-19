@@ -271,7 +271,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 						}
 
 						doc := strings.Join(route.RequestType.Documents(), ",")
-						doc = strings.Replace(doc, "//", "", -1)
+						doc = strings.TrimSpace(strings.Replace(doc, "//", "", -1))
 
 						if doc != "" {
 							parameter.Description = doc
@@ -346,8 +346,15 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 
 			// if request has body, there is no way to distinguish query param and form param.
 			// because they both share the "form" tag, the same param will appear in both query and body.
-			if hasBody && containForm && !containJson {
+			method := strings.ToUpper(route.Method)
+			if hasBody && containForm && !containJson && method != http.MethodDelete {
 				operationObject.Consumes = []string{"multipart/form-data", "application/x-www-form-urlencoded"}
+
+				for i := range operationObject.Parameters {
+					if operationObject.Parameters[i].In == "query" {
+						operationObject.Parameters[i].In = "formData"
+					}
+				}
 			}
 
 			for _, v := range route.Doc {
@@ -416,7 +423,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 				operationObject.Security = &[]swaggerSecurityRequirementObject{{"apiKey": []string{}}}
 			}
 
-			switch strings.ToUpper(route.Method) {
+			switch method {
 			case http.MethodGet:
 				pathItemObject.Get = operationObject
 			case http.MethodPost:
@@ -620,7 +627,7 @@ func renderStruct(member spec.Member) swaggerParameterObject {
 	}
 
 	if len(member.Comment) > 0 {
-		sp.Description = strings.Replace(strings.TrimLeft(member.Comment, "//"), "\\n", "\n", -1)
+		sp.Description = strings.TrimSpace(strings.Replace(strings.TrimLeft(member.Comment, "//"), "\\n", "\n", -1))
 	}
 
 	// schema is defined when "in" == "body"
@@ -766,7 +773,7 @@ func schemaOfField(member spec.Member) swaggerSchemaObject {
 	var props *swaggerSchemaObjectProperties
 
 	comment := member.GetComment()
-	comment = strings.Replace(strings.Replace(comment, "//", "", -1), "\\n", "\n", -1)
+	comment = strings.TrimSpace(strings.Replace(strings.Replace(comment, "//", "", -1), "\\n", "\n", -1))
 
 	switch ft := kind; ft {
 	case reflect.Invalid: // []Struct 也有可能是 Struct
