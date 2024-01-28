@@ -44,22 +44,24 @@ const (
 	tagKeyJson     = "json"
 	tagKeyValidate = "validate"
 
+	// DefaultResponseJson default response pack json structure.
 	DefaultResponseJson = `[{"name":"trace_id","type":"string","description":"链路追踪id","example":"a1b2c3d4e5f6g7h8"},{"name":"code","type":"integer","description":"状态码","example":0},{"name":"msg","type":"string","description":"消息","example":"ok"},{"name":"data","type":"object","description":"数据","is_data":true}]`
 )
 
-func parseRangeOption(option string) (float64, float64, bool) {
+func parseRangeOption(option string) (min, max float64, ok bool) {
 	const str = "\\[([+-]?\\d+(\\.\\d+)?):([+-]?\\d+(\\.\\d+)?)\\]"
 	result := regexp.MustCompile(str).FindStringSubmatch(option)
 	if len(result) != 5 {
 		return 0, 0, false
 	}
 
-	min, err := strconv.ParseFloat(result[1], 64)
+	var err error
+	min, err = strconv.ParseFloat(result[1], 64)
 	if err != nil {
 		return 0, 0, false
 	}
 
-	max, err := strconv.ParseFloat(result[3], 64)
+	max, err = strconv.ParseFloat(result[3], 64)
 	if err != nil {
 		return 0, 0, false
 	}
@@ -271,7 +273,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 						}
 
 						doc := strings.Join(route.RequestType.Documents(), ",")
-						doc = strings.TrimSpace(strings.Replace(doc, "//", "", -1))
+						doc = strings.TrimSpace(strings.ReplaceAll(doc, "//", ""))
 
 						if doc != "" {
 							parameter.Description = doc
@@ -292,7 +294,6 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 			// respRef := swaggerSchemaObject{}
 			if route.ResponseType != nil && len(route.ResponseType.Name()) > 0 {
 				if strings.HasPrefix(route.ResponseType.Name(), "[]") {
-
 					refTypeName := strings.Replace(route.ResponseType.Name(), "[", "", 1)
 					refTypeName = strings.Replace(refTypeName, "]", "", 1)
 					refTypeName = strings.TrimPrefix(refTypeName, "*") // remove array item pointer
@@ -455,17 +456,17 @@ func renderMember(pathParamMap map[string]swaggerParameterObject,
 				containJson = true
 			}
 		}
-		return
+		return containForm, containJson
 	}
 
 	p := renderStruct(member)
 
 	if hasBody && p.In == "" {
-		return
+		return containForm, containJson
 	}
 	if p.In == "body" {
 		containJson = true
-		return
+		return containForm, containJson
 	}
 	if p.In == "query" {
 		containForm = true
@@ -483,7 +484,7 @@ func renderMember(pathParamMap map[string]swaggerParameterObject,
 		delete(pathParamMap, p.Name)
 	}
 	*parameters = append(*parameters, p)
-	return
+	return containForm, containJson
 }
 
 func fillValidateOption(s *swaggerSchemaObject, opt string) {
@@ -554,7 +555,7 @@ func fillValidate(s *swaggerSchemaObject, tag *spec.Tag) {
 
 // renderStruct only need to deal with params in header/path/query
 func renderStruct(member spec.Member) swaggerParameterObject {
-	tempKind := swaggerMapTypes[strings.Replace(member.Type.Name(), "[]", "", -1)]
+	tempKind := swaggerMapTypes[strings.ReplaceAll(member.Type.Name(), "[]", "")]
 
 	ftype, format, ok := primitiveSchema(tempKind, member.Type.Name())
 	if !ok {
@@ -627,7 +628,7 @@ func renderStruct(member spec.Member) swaggerParameterObject {
 	}
 
 	if len(member.Comment) > 0 {
-		sp.Description = strings.TrimSpace(strings.Replace(strings.TrimLeft(member.Comment, "//"), "\\n", "\n", -1))
+		sp.Description = strings.TrimSpace(strings.ReplaceAll(strings.TrimLeft(member.Comment, "/"), "\\n", "\n"))
 	}
 
 	// schema is defined when "in" == "body"
@@ -639,7 +640,7 @@ func renderStruct(member spec.Member) swaggerParameterObject {
 	return sp
 }
 
-func renderReplyAsDefinition(d swaggerDefinitionsObject, m messageMap, p []spec.Type, refs refMap) {
+func renderReplyAsDefinition(d swaggerDefinitionsObject, _ messageMap, p []spec.Type, _ refMap) {
 	// record inline struct
 	inlineMap := make(map[string][]string)
 	for _, i2 := range p {
@@ -717,7 +718,7 @@ func renderReplyAsDefinition(d swaggerDefinitionsObject, m messageMap, p []spec.
 func collectProperties(jsonFields, formFields, untaggedFields *swaggerSchemaObjectProperties, member spec.Member) (inlines []string) {
 	in := fieldIn(member)
 	if in == tagKeyHeader || in == tagKeyPath {
-		return
+		return inlines
 	}
 
 	name := member.Name
@@ -734,11 +735,10 @@ func collectProperties(jsonFields, formFields, untaggedFields *swaggerSchemaObje
 				is := collectProperties(jsonFields, formFields, untaggedFields, m)
 				inlines = append(inlines, is...)
 			}
-			return
-		} else {
-			inlines = append(inlines, memberStruct.Name())
-			return
+			return inlines
 		}
+		inlines = append(inlines, memberStruct.Name())
+		return inlines
 	}
 
 	kv := keyVal{Key: name, Value: schemaOfField(member)}
@@ -751,7 +751,7 @@ func collectProperties(jsonFields, formFields, untaggedFields *swaggerSchemaObje
 		*untaggedFields = append(*untaggedFields, kv)
 	}
 
-	return
+	return inlines
 }
 
 func fieldIn(member spec.Member) string {
@@ -773,7 +773,7 @@ func schemaOfField(member spec.Member) swaggerSchemaObject {
 	var props *swaggerSchemaObjectProperties
 
 	comment := member.GetComment()
-	comment = strings.TrimSpace(strings.Replace(strings.Replace(comment, "//", "", -1), "\\n", "\n", -1))
+	comment = strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(comment, "//", ""), "\\n", "\n"))
 
 	switch ft := kind; ft {
 	case reflect.Invalid: // []Struct 也有可能是 Struct
@@ -793,21 +793,20 @@ func schemaOfField(member spec.Member) swaggerSchemaObject {
 		} else if strings.HasPrefix(refTypeName, "[]") {
 			core = schemaCore{Type: "array"}
 
-			tempKind := swaggerMapTypes[strings.Replace(refTypeName, "[]", "", -1)]
+			tempKind := swaggerMapTypes[strings.ReplaceAll(refTypeName, "[]", "")]
 			ftype, format, ok := primitiveSchema(tempKind, refTypeName)
 			if ok {
 				core.Items = &swaggerItemsObject{Type: ftype, Format: format}
 			} else {
 				core.Items = &swaggerItemsObject{Type: ft.String(), Format: "UNKNOWN"}
 			}
-
 		} else {
 			core = schemaCore{
 				Ref: "#/definitions/" + refTypeName,
 			}
 		}
 	case reflect.Slice:
-		tempKind := swaggerMapTypes[strings.Replace(member.Type.Name(), "[]", "", -1)]
+		tempKind := swaggerMapTypes[strings.ReplaceAll(member.Type.Name(), "[]", "")]
 		ftype, format, ok := primitiveSchema(tempKind, member.Type.Name())
 
 		if ok {
@@ -928,7 +927,7 @@ func primitiveSchema(kind reflect.Kind, t string) (ftype, format string, ok bool
 	case reflect.Float64:
 		return "number", "double", true
 	case reflect.Slice:
-		return strings.Replace(t, "[]", "", -1), "", true
+		return strings.ReplaceAll(t, "[]", ""), "", true
 	default:
 		return "", "", false
 	}

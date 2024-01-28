@@ -1,0 +1,193 @@
+run:
+  go: '1.16'
+  concurrency: 4
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - example
+
+linters-settings:
+  errcheck:
+    # https://github.com/kisielk/errcheck#errcheck
+    ignore: fmt:.*,os:.*
+  goconst:
+    # https://github.com/jgautheron/goconst#usage
+    ignore-tests: true
+    min-len: 3
+    min-occurrences: 4
+  gocritic:
+    # https://go-critic.github.io/overview#checks-overview
+    disabled-checks:
+      - ifElseChain
+  gofumpt:
+    # https://github.com/mvdan/gofumpt#gofumpt
+    extra-rules: true
+  gosimple:
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all" ]
+  revive:
+    ignore-generated-header: true
+    severity: warning
+    # https://github.com/mgechev/revive#available-rules
+    rules:
+      - name: context-keys-type
+      - name: time-equal
+      - name: time-naming
+      - name: var-declaration
+      - name: unexported-return
+      - name: errorf
+      - name: context-as-argument
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+        arguments:
+          - [ "ID", "JSON" ] # allow list
+      - name: range
+      - name: receiver-naming
+      - name: indent-error-flow
+      - name: argument-limit
+      - name: file-header
+      - name: empty-block
+      - name: superfluous-else
+      - name: confusing-naming
+      - name: get-return
+      - name: modifies-parameter
+      - name: confusing-results
+      # - name: deep-exit
+      - name: unused-parameter
+      - name: unreachable-code
+      # - name: add-constant
+      - name: unnecessary-stmt
+      - name: struct-tag
+      - name: modifies-value-receiver
+      - name: constant-logical-expr
+      - name: bool-literal-in-expr
+      - name: redefines-builtin-id
+      - name: function-result-limit
+      - name: imports-blacklist
+      - name: range-val-in-closure
+      - name: range-val-address
+      - name: waitgroup-by-value
+      - name: atomic
+      - name: empty-lines
+      - name: call-to-gc
+      - name: duplicated-imports
+      # - name: import-shadowing
+      - name: string-of-int
+      - name: string-format
+      - name: early-return
+      - name: unconditional-recursion
+      - name: identical-branches
+      - name: defer
+      - name: unexported-naming
+      # - name: nested-structs
+      - name: useless-break
+      - name: banned-characters
+      - name: optimize-operands-order
+      # - name: use-any
+      - name: datarace
+      - name: comment-spacings
+      - name: redundant-import-alias
+      - name: import-alias-naming
+      - name: enforce-map-style
+  staticcheck:
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all" ]
+  stylecheck:
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all", "-ST1000", "-ST1003" ]
+
+linters:
+  disable-all: true
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - decorder
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - execinquery
+    # - exhaustive
+    - exportloopref
+    - forcetypeassert
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    # - goconst
+    - gocritic
+    # - gocyclo
+    # - godot
+    - godox
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
+    # - gomnd
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosimple
+    - govet
+    - grouper
+    - importas
+    - inamedparam
+    - ineffassign
+    - interfacebloat
+    - ireturn
+    - loggercheck
+    # - maintidx
+    - makezero
+    - mirror
+    - misspell
+    - musttag
+    - nakedret
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - nosprintfhostport
+    - perfsprint
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - revive
+    - rowserrcheck
+    - sloglint
+    - sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - tenv
+    - testableexamples
+    - testifylint
+    - thelper
+    - tparallel
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+    # - wrapcheck
+    - zerologlint
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

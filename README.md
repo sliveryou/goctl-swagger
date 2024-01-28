@@ -5,28 +5,36 @@
 
 1. 修复：当存在第三方 tag 时，生成的参数名称错误的问题
 2. 修复：当结构体嵌套超过2层时，参数不能正确生成的问题
-3. 修复：当同时存在 form 和 json tag时，request body 包含多余字段的问题
+3. 修复：当同时存在 form 和 json tag 时，request body 包含多余字段的问题
 4. 优化：支持从 [validate](https://github.com/go-playground/validator) tag 中获取参数约束
-5. 升级 goctl 和 go-zero 到 v1.6.0，修复 [#71](https://github.com/zeromicro/goctl-swagger/issues/71)
-6. 当请求方法是 POST/PUT/PATCH 时，如果请求字段不包含 json tag，且包含 form tag时，在请求的 content-type 中添加 "multipart/form-data", "application/x-www-form-urlencoded"
-7. 添加 `-pack` 和 `-response` 选项，允许在 api 返回结构外再嵌套包装一层
+5. 修复：升级 goctl 和 go-zero 到 v1.6.1，修复 [#71](https://github.com/zeromicro/goctl-swagger/issues/71)
+6. 添加：当请求方法是 POST/PUT/PATCH 时，如果请求字段不包含 json tag，且包含 form tag 时，在请求的 content-type 中添加 "multipart/form-data", "application/x-www-form-urlencoded"
+7. 添加：`-pack` 和 `-response` 选项，允许在 api 返回结构外再嵌套包装一层
 8. 修复：当结构体嵌套超过2层时，不能继承内联结构体属性的问题
 9. 优化：支持根据 `@doc()` 里的 `file_*` 或 `file_array_*` 键值生成文件类型的请求字段
-10. 添加 `delete` 请求方式允许携带请求体 [git commit](https://github.com/sliveryou/goctl-swagger/-/commit/7859e55451a11af8fbfdb91a636b23f965bb5bbe)
+10. 添加：`delete` 请求方式允许携带请求体
 
-### 2. 编译goctl-swagger插件
+### 2. 编译 goctl-swagger 插件
 
 ```bash
-git clone https://github.com/sliveryou/goctl-swagger.git
-cd goctl-swagger
-go install
+# 可选：自行编译安装：
+$ git clone https://github.com/sliveryou/goctl-swagger.git
+$ cd goctl-swagger
+$ go install
+
+# 推荐：
+# 如果 go 版本在 1.16 以前，使用如下命令安装：
+$ GO111MODULE=on go get -u github.com/sliveryou/goctl-swagger@latest
+
+# 如果 go 版本在 1.16 及以后，使用如下命令安装：
+$ GO111MODULE=on go install github.com/sliveryou/goctl-swagger@latest
 ```
 
 ### 3. goctl-swagger 使用说明
 
 在 api 返回结构外再嵌套包装一层：
 
-```shell
+```bash
 # -filename 指定生成的 swagger 文件名称
 # -pack 开启响应包装并指定响应结构名称
 #  未指定 -response 时，默认使用如下响应结构，其中 is_data 字段为指定响应结构的包装字段

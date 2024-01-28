@@ -3,9 +3,11 @@ package action
 import (
 	cli "github.com/urfave/cli/v2"
 	"github.com/zeromicro/go-zero/tools/goctl/plugin"
-	"github.com/zeromicro/goctl-swagger/generate"
+
+	"github.com/sliveryou/goctl-swagger/generate"
 )
 
+// Generator generates the swagger json doc.
 func Generator(ctx *cli.Context) error {
 	fileName := ctx.String("filename")
 

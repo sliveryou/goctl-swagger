@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/zeromicro/go-zero/tools/goctl/plugin"
 )
 
+// Do generates the swagger json doc.
 func Do(filename, host, basePath, schemes, pack, response string, in *plugin.Plugin) error {
 	swagger, err := applyGenerate(in, host, basePath, schemes, pack, response)
 	if err != nil {
@@ -24,7 +25,7 @@ func Do(filename, host, basePath, schemes, pack, response string, in *plugin.Plu
 
 	output := in.Dir + "/" + filename
 
-	err = ioutil.WriteFile(output, formatted.Bytes(), 0o666)
+	err = os.WriteFile(output, formatted.Bytes(), 0o666)
 	if err != nil {
 		fmt.Println(err)
 	}
