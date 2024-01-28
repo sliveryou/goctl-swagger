@@ -3,6 +3,7 @@
 proxy:
 	@go env -w GO111MODULE="on"
 	@go env -w GOPROXY="https://goproxy.cn,direct"
+	@git config --global url."git@github.com:sliveryou/goctl-swagger.git".insteadOf "https://github.com/sliveryou/goctl-swagger.git"
 
 tidy:
 	@go mod tidy -e -v
