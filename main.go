@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	version  = "20220621"
+	version  = "20240213"
 	commands = []*cli.Command{
 		{
 			Name:   "swagger",
@@ -53,7 +53,7 @@ var (
 func main() {
 	app := cli.NewApp()
 	app.Usage = "a plugin of goctl to generate swagger.json"
-	app.Version = fmt.Sprintf("%s %s/%s", version, runtime.GOOS, runtime.GOARCH)
+	app.Version = fmt.Sprintf("custom %s %s/%s", version, runtime.GOOS, runtime.GOARCH)
 	app.Commands = commands
 	if err := app.Run(os.Args); err != nil {
 		fmt.Printf("goctl-swagger: %+v\n", err)
