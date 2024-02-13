@@ -52,7 +52,6 @@ jobs:
       - run: go install github.com/incu6us/goimports-reviser/v3@v3.6.4
       - run: go install mvdan.cc/gofumpt@v0.6.0
       - run: go install mvdan.cc/sh/v3/cmd/shfmt@v3.8.0
-      - run: go install mvdan.cc/sh/v3/cmd/gosh@v3.8.0
       - run: go mod tidy
       - name: Code fmt
         run: |
