@@ -169,7 +169,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 					part := p[i]
 					if strings.Contains(part, ":") {
 						key := strings.TrimPrefix(p[i], ":")
-						path = strings.Replace(path, fmt.Sprintf(":%s", key), fmt.Sprintf("{%s}", key), 1)
+						path = strings.Replace(path, ":"+key, "{"+key+"}", 1)
 						spo := swaggerParameterObject{
 							Name:     key,
 							In:       "path",
@@ -256,7 +256,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 					}
 				}
 				if hasBody && containJson {
-					reqRef := fmt.Sprintf("#/definitions/%s", route.RequestType.Name())
+					reqRef := "#/definitions/" + route.RequestType.Name()
 
 					if len(route.RequestType.Name()) > 0 {
 						schema := swaggerSchemaObject{
@@ -299,9 +299,9 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 					refTypeName = strings.TrimPrefix(refTypeName, "*") // remove array item pointer
 
 					respSchema.Type = "array"
-					respSchema.Items = &swaggerItemsObject{Ref: fmt.Sprintf("#/definitions/%s", refTypeName)}
+					respSchema.Items = &swaggerItemsObject{Ref: "#/definitions/" + refTypeName}
 				} else {
-					respSchema.Ref = fmt.Sprintf("#/definitions/%s", route.ResponseType.Name())
+					respSchema.Ref = "#/definitions/" + route.ResponseType.Name()
 				}
 			}
 			tags := service.Name
@@ -396,7 +396,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 							Description: comment,
 							Schema: swaggerSchemaObject{
 								schemaCore: schemaCore{
-									Ref: fmt.Sprintf("#/definitions/%s", content),
+									Ref: "#/definitions/" + content,
 								},
 							},
 						}

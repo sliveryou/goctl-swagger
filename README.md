@@ -1,6 +1,5 @@
 # 自定义 goctl-swagger 
 
-
 ### 1. goctl-swagger 修复分支
 
 1. 修复：当存在第三方 tag 时，生成的参数名称错误的问题
@@ -16,18 +15,16 @@
 
 ### 2. 编译 goctl-swagger 插件
 
+**需要 go 1.19 以上版本编译安装**
+
 ```bash
 # 可选：自行编译安装：
 $ git clone https://github.com/sliveryou/goctl-swagger.git
 $ cd goctl-swagger
 $ go install
 
-# 推荐：
-# 如果 go 版本在 1.16 以前，使用如下命令安装：
-$ GO111MODULE=on go get -u github.com/sliveryou/goctl-swagger@latest
-
-# 如果 go 版本在 1.16 及以后，使用如下命令安装：
-$ GO111MODULE=on go install github.com/sliveryou/goctl-swagger@latest
+# 推荐：使用如下命令安装：
+$ go install github.com/sliveryou/goctl-swagger@latest
 ```
 
 ### 3. goctl-swagger 使用说明
