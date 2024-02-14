@@ -16,3 +16,4 @@ Thumbs.db
 
 #
 .swagger-codegen
+/goctl-swagger
