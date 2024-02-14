@@ -1,11 +1,16 @@
-name: ci
+name: CI
+
 on:
   push:
+    branches:
+      - 'main'
     paths:
       - 'go.mod'
       - '**.go'
       - '**.yml'
   pull_request:
+    branches:
+      - 'main'
     paths:
       - 'go.mod'
       - '**.go'
@@ -49,10 +54,13 @@ jobs:
         with:
           go-version: '${{ env.lint_go_version }}'
 
-      - run: go install github.com/incu6us/goimports-reviser/v3@v3.6.4
-      - run: go install mvdan.cc/gofumpt@v0.6.0
-      - run: go install mvdan.cc/sh/v3/cmd/shfmt@v3.8.0
-      - run: go mod tidy
+      - name: Install tools
+        run: |
+          go install mvdan.cc/gofumpt@v0.6.0
+          go install mvdan.cc/sh/v3/cmd/shfmt@v3.8.0
+          go install github.com/incu6us/goimports-reviser/v3@v3.6.4
+          go mod tidy
+
       - name: Code fmt
         run: |
           make fmt

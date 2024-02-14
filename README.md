@@ -27,6 +27,8 @@ $ go install
 $ go install github.com/sliveryou/goctl-swagger@latest
 ```
 
+或者从 github 的 [release](https://github.com/sliveryou/goctl-swagger/releases) 页面下载预编译好的二进制文件
+
 ### 3. goctl-swagger 使用说明
 
 在 api 返回结构外再嵌套包装一层：
