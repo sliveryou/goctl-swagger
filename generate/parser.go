@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -845,9 +844,6 @@ func schemaOfField(member spec.Member) swaggerSchemaObject {
 				schemaCore: core,
 				Properties: props,
 			}
-		}
-		if strings.HasPrefix(member.Type.Name(), "map") {
-			fmt.Println("暂不支持map类型")
 		}
 	default:
 		ret = swaggerSchemaObject{
