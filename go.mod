@@ -7,7 +7,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.1
 	github.com/zeromicro/go-zero v1.6.2
 	github.com/zeromicro/go-zero/tools/goctl v1.6.2
-	golang.org/x/oauth2 v0.17.0
+	golang.org/x/oauth2 v0.18.0
 )
 
 require (
@@ -55,8 +55,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/automaxprocs v1.5.3 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20231106174013-bbf56f31fb17 // indirect
