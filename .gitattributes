@@ -1,0 +1,2 @@
+*.js linguist-language=Go
+*.php linguist-language=Go
