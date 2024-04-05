@@ -136,9 +136,7 @@ func applyGenerate(p *plugin.Plugin, host, basePath, schemes, pack, response str
 
 	requestResponseRefs := refMap{}
 	renderServiceRoutes(p.Api.Service, p.Api.Service.Groups, s.Paths, requestResponseRefs, pack, dataKey)
-	m := messageMap{}
-
-	renderReplyAsDefinition(s.Definitions, m, p.Api.Types, requestResponseRefs)
+	renderReplyAsDefinition(s.Definitions, p.Api.Types, requestResponseRefs)
 
 	return &s, nil
 }
@@ -639,7 +637,7 @@ func renderStruct(member spec.Member) swaggerParameterObject {
 	return sp
 }
 
-func renderReplyAsDefinition(d swaggerDefinitionsObject, _ messageMap, p []spec.Type, _ refMap) {
+func renderReplyAsDefinition(d swaggerDefinitionsObject, p []spec.Type, _ refMap) {
 	// record inline struct
 	inlineMap := make(map[string][]string)
 	for _, i2 := range p {
