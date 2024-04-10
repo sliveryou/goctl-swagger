@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/urfave/cli/v2 v2.27.1
-	github.com/zeromicro/go-zero/tools/goctl v1.6.3
+	github.com/zeromicro/go-zero/tools/goctl v1.6.4
 )
 
 require (
@@ -18,7 +18,7 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913 // indirect
 	github.com/zeromicro/antlr v0.0.1 // indirect
-	github.com/zeromicro/go-zero v1.6.3 // indirect
+	github.com/zeromicro/go-zero v1.6.4 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )
