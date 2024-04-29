@@ -3,7 +3,7 @@ module github.com/sliveryou/goctl-swagger
 go 1.19
 
 require (
-	github.com/urfave/cli/v2 v2.27.1
+	github.com/urfave/cli/v2 v2.27.2
 	github.com/zeromicro/go-zero/tools/goctl v1.6.4
 )
 
