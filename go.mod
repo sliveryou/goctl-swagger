@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/urfave/cli/v2 v2.27.2
-	github.com/zeromicro/go-zero/tools/goctl v1.6.4
+	github.com/zeromicro/go-zero/tools/goctl v1.6.5
 )
 
 require (
@@ -12,6 +12,8 @@ require (
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -21,4 +23,6 @@ require (
 	github.com/zeromicro/go-zero v1.6.4 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
