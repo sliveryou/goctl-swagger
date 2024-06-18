@@ -146,6 +146,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 		for _, route := range group.Routes {
 			var (
 				pathParamMap             = make(map[string]swaggerParameterObject)
+				method                   = strings.ToUpper(route.Method)
 				parameters               swaggerParametersObject
 				hasBody                  bool
 				containForm, containJson bool
@@ -238,7 +239,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 
 			if defineStruct, ok := route.RequestType.(spec.DefineStruct); ok {
 				for _, member := range defineStruct.Members {
-					f, j := renderMember(pathParamMap, &parameters, member, hasBody)
+					f, j := renderMember(pathParamMap, &parameters, member, method)
 					if f {
 						containForm = true
 					}
@@ -344,7 +345,6 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 
 			// if request has body, there is no way to distinguish query param and form param.
 			// because they both share the "form" tag, the same param will appear in both query and body.
-			method := strings.ToUpper(route.Method)
 			if hasBody && containForm && !containJson && method != http.MethodDelete {
 				operationObject.Consumes = []string{"multipart/form-data", "application/x-www-form-urlencoded"}
 
@@ -441,11 +441,11 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 
 // renderMember collect param property from spec.Member, return whether there exists form fields and json fields.
 func renderMember(pathParamMap map[string]swaggerParameterObject,
-	parameters *swaggerParametersObject, member spec.Member, hasBody bool,
+	parameters *swaggerParametersObject, member spec.Member, method string,
 ) (containForm, containJson bool) {
 	if embedStruct, isEmbed := member.Type.(spec.DefineStruct); isEmbed {
 		for _, m := range embedStruct.Members {
-			f, j := renderMember(pathParamMap, parameters, m, hasBody)
+			f, j := renderMember(pathParamMap, parameters, m, method)
 			if f {
 				containForm = true
 			}
@@ -458,8 +458,12 @@ func renderMember(pathParamMap map[string]swaggerParameterObject,
 
 	p := renderStruct(member)
 
-	if hasBody && p.In == "" {
-		return containForm, containJson
+	if p.In == "" {
+		if method == http.MethodGet {
+			p.In = "query"
+		} else {
+			p.In = "body"
+		}
 	}
 	if p.In == "body" {
 		containJson = true
@@ -467,10 +471,6 @@ func renderMember(pathParamMap map[string]swaggerParameterObject,
 	}
 	if p.In == "query" {
 		containForm = true
-	}
-	// default in query?
-	if p.In == "" {
-		p.In = "query"
 	}
 
 	// overwrite path parameter if we get a user defined one from struct.
@@ -480,7 +480,9 @@ func renderMember(pathParamMap map[string]swaggerParameterObject,
 		}
 		delete(pathParamMap, p.Name)
 	}
+
 	*parameters = append(*parameters, p)
+
 	return containForm, containJson
 }
 
@@ -622,6 +624,10 @@ func renderStruct(member spec.Member) swaggerParameterObject {
 			}
 		}
 		sp.Required = required
+	}
+
+	if sp.Name == "" {
+		sp.Name = member.Name
 	}
 
 	if len(member.Comment) > 0 {
