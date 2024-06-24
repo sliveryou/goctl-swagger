@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/urfave/cli/v2 v2.27.2
-	github.com/zeromicro/go-zero/tools/goctl v1.6.5
+	github.com/zeromicro/go-zero/tools/goctl v1.6.6
 )
 
 require (
