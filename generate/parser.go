@@ -235,6 +235,7 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 						}
 					}
 					parameters = append(parameters, spo)
+					containForm = true
 				}
 			}
 
@@ -418,7 +419,8 @@ func renderServiceRoutes(service spec.Service, groups []spec.Group, paths swagge
 
 			operationObject.Description = strings.ReplaceAll(operationObject.Description, "\"", "")
 
-			if group.Annotation.Properties["jwt"] != "" {
+			if group.GetAnnotation("jwt") != "" ||
+				strings.Contains(strings.ToLower(group.GetAnnotation("middleware")), "jwt") {
 				operationObject.Security = &[]swaggerSecurityRequirementObject{{"apiKey": []string{}}}
 			}
 
