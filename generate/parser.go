@@ -42,6 +42,7 @@ const (
 	tagKeyForm     = "form"
 	tagKeyJson     = "json"
 	tagKeyValidate = "validate"
+	tagKeyExample  = "example"
 
 	// DefaultResponseJson default response pack json structure.
 	DefaultResponseJson = `[{"name":"trace_id","type":"string","description":"链路追踪id","example":"a1b2c3d4e5f6g7h8"},{"name":"code","type":"integer","description":"状态码","example":0},{"name":"msg","type":"string","description":"消息","example":"ok"},{"name":"data","type":"object","description":"数据","is_data":true}]`
@@ -552,6 +553,24 @@ func fillValidate(s *swaggerSchemaObject, tag *spec.Tag) {
 	}
 }
 
+func fillExample(s *swaggerSchemaObject, tag *spec.Tag) {
+	if tag.Key != tagKeyExample {
+		return
+	}
+	switch s.Type {
+	case "string":
+		s.Example = tag.Name
+	case "integer":
+		s.Example, _ = strconv.Atoi(tag.Name)
+	case "number":
+		s.Example, _ = strconv.ParseFloat(tag.Name, 64)
+	case "boolean":
+		s.Example, _ = strconv.ParseBool(tag.Name)
+	case "array":
+		s.Example = append([]string{tag.Name}, tag.Options...)
+	}
+}
+
 // renderStruct only need to deal with params in header/path/query
 func renderStruct(member spec.Member) swaggerParameterObject {
 	tempKind := swaggerMapTypes[strings.ReplaceAll(member.Type.Name(), "[]", "")]
@@ -860,6 +879,9 @@ func schemaOfField(member spec.Member) swaggerSchemaObject {
 	for _, tag := range member.Tags() {
 		if tag.Key == tagKeyValidate {
 			fillValidate(&ret, tag)
+			continue
+		} else if tag.Key == tagKeyExample {
+			fillExample(&ret, tag)
 			continue
 		}
 		if len(tag.Options) == 0 || tag.Key != tagKeyForm && tag.Key != tagKeyJson {
